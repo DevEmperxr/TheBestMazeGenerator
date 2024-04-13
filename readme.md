@@ -44,7 +44,7 @@ Use the `exportPDF()` method to export the maze as a PDF file.
 Check your directory for the exported maze files.
 - View the PDF files using a PDF viewer or print them for physical copies.
 
-## Example
+### Example
 
 ```javascript
 const Maze = require('./mazeGenerator');
@@ -54,7 +54,7 @@ const maze = new Maze(10, 10, true);
 
 // Export the maze as a PDF with custom settings
 maze.exportPDF(10, 1, '#000000');
-
+```
 
 ### Dependencies:
 - **fs**: File system module for Node.js.
