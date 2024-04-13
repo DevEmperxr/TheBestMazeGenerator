@@ -10,7 +10,7 @@ This JavaScript project is a maze generator and exporter built using Node.js. It
 ### How to Use:
 1. **Clone the Repository**:
 Start by cloning this repository to your local machine using the following command:
-```bash
+```
 git clone https://github.com/DevEmperxr/TheMazeGenerator.git
 ```
 2. **Install Dependencies**:
