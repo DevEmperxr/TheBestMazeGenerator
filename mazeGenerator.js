@@ -1,28 +1,6 @@
 const fs = require('fs');
-const { globalAgent } = require('http');
-const doc = require('pdfkit');
+const PDFDocument = require('pdfkit');
 
-class PriorityQueue {
-    constructor(){
-        this.queue = []
-    }
-    
-    qpush(cell , prio){
-        if(this.queue.length == 0 ){
-            this.queue.push([cell , prio])
-        }else{
-        for(let item of this.queue){
-            if (prio >= item[1]){
-                this.queue.splice(this.queue.indexOf(item), 0 , [cell, prio] )
-            }
-
-        }}
-    }
-
-    qpop(){
-        return this.queue.pop()
-    }
-}
 
 class Cell {
     constructor(x,y){
@@ -37,6 +15,7 @@ class Maze {
         this.columns = columns
         this.solve = solve
         this.grid = []
+        this.doc = new PDFDocument();
         let stack = []
         for (let r = 0 ; r < this.rows ;r++ ){
             for (let c = 0 ; c<this.columns ;c++){
@@ -161,69 +140,23 @@ class Maze {
 
 
 
-    exportSVG(x,y ,size, lineColor, stroke, fileExport){
-        let payload = '<svg  version="1.1" xmlns="http://www.w3.org/2000/svg"  >'
-        let [hwalls , vwalls] = this.wallList()
-        let unit = (this.rows > this.columns ? size/this.rows : size/this.columns)
-        let x1 = 0
-        let y1 = 0
+    
 
-        for (let wall of hwalls){
-            if(wall[0] == 1 ){
-                payload+= `<line x1="${x+(x1*unit)}" y1="${(y1*unit)+ y}" x2="${x+((x1* unit) +wall[1]*unit)}" y2="${(y1*unit)+y}" stroke-linecap="square" style="stroke:${lineColor};stroke-width:${stroke}" />`
-                x1+= wall[1]
-            }
-            else if(wall[0] == 0 ){
-                x1 += wall[1]
-            }
-            else if (wall[0]=='newHLine'){
-                y1 += 1
-                x1=0
-            }
-        }
-        x1 = 0 
-        y1 = 0
-        for (let wall of vwalls){
-            if(wall[0] == 1 ){
-                payload+= `<line x1="${x+(x1*unit)}" y1="${y+ (y1*unit)}" x2="${x+(x1* unit)}" y2="${y+(y1*unit + wall[1]*unit)}" stroke-linecap="square" style="stroke:${lineColor};stroke-width:${stroke}" />`
-                y1+= wall[1]
-            }
-            else if(wall[0] == 0 ){
-                y1 += wall[1]
-            }
-            else if (wall[0] == 'newVLine'){
-                x1 += 1
-                y1=0
-            }
-        }
+    exportPDF(marginPercentage,strokeWidth,color){
+        marginPercentage = 100 - marginPercentage
+        this.doc.pipe( fs.createWriteStream('maze.pdf') );
 
-
-
-       payload += `<line x1="${x}" y1="${y+(unit*this.rows)}" x2="${x+(unit*this.columns)}" y2="${y+(unit*this.rows)}" stroke-linecap="square" style="stroke:${lineColor};stroke-width:${stroke}" /><line x1="${x+(unit*this.columns)}" y1="${y}" x2="${x+(unit*this.columns)}" y2="${y+(unit*(this.rows-1))}" stroke-linecap="square" style="stroke:${lineColor};stroke-width:${stroke}" /></svg>`
-        if (fileExport == true){
-            try {
-                fs.writeFileSync('maze.svg', payload)
-              } catch (err) {
-                console.error(err);
-              }
-        }else{
-        return payload
-        }
-    }
-
-    exportPDF(doc, scale,stroke,color){
-        doc.addPage()
         let [hwalls, vwalls] = this.wallList()
-        let unit = (this.rows > this.columns ? (doc.page.height*scale/100)/this.rows : (doc.page.width*scale/100)/this.columns) 
-        let x = (doc.page.width/2) - ((unit*this.columns) /2)
-        let y = (doc.page.height/2) - ((unit*this.rows) /2)
+        let unit = (this.rows > this.columns ? (this.doc.page.height*marginPercentage/100)/this.rows : (this.doc.page.width*marginPercentage/100)/this.columns) 
+        let x = (this.doc.page.width/2) - ((unit*this.columns) /2)
+        let y = (this.doc.page.height/2) - ((unit*this.rows) /2)
         let x1 = 0
         let y1 = 0
 
         for (let wall of hwalls){
             if(wall[0] == 1 ){
-                doc.moveTo((x1*unit) +x , y+ (y1*unit))
-                doc.lineTo( (x1*unit) + (wall[1]*unit) + x , (y1*unit) +y)
+                this.doc.moveTo((x1*unit) +x , y+ (y1*unit))
+                this.doc.lineTo( (x1*unit) + (wall[1]*unit) + x , (y1*unit) +y)
                 x1+= wall[1]
             }
             else if(wall[0] == 0 ){
@@ -238,8 +171,8 @@ class Maze {
         y1 = 0
         for (let wall of vwalls){
             if(wall[0] == 1 ){
-                doc.moveTo((x1*unit) +x , (y1*unit)+y)
-                doc.lineTo( x+ (x1*unit) , y + (y1*unit) + (wall[1]*unit))
+                this.doc.moveTo((x1*unit) +x , (y1*unit)+y)
+                this.doc.lineTo( x+ (x1*unit) , y + (y1*unit) + (wall[1]*unit))
                 y1+= wall[1]
             }
             else if(wall[0] == 0 ){
@@ -250,19 +183,19 @@ class Maze {
                 y1=0
             }
         }
-        doc.moveTo(x+(unit*this.columns), y)
-        doc.lineTo((unit*this.columns)+ x , unit*(this.rows-1) + y)
-        doc.moveTo((unit*this.columns) + x , y+ (unit*(this.rows)))
-        doc.lineTo(x,unit*this.rows + y).lineCap('round').lineWidth(stroke).strokeColor(color).stroke()
+        this.doc.moveTo(x+(unit*this.columns), y)
+        this.doc.lineTo((unit*this.columns)+ x , unit*(this.rows-1) + y)
+        this.doc.moveTo((unit*this.columns) + x , y+ (unit*(this.rows)))
+        this.doc.lineTo(x,unit*this.rows + y).lineCap('round').lineWidth(strokeWidth).strokeColor(color).stroke()
         if (this.solve == true){
             x1 = 0
             y1 = 0
 
-            doc.addPage()
+            this.doc.addPage()
             for (let wall of hwalls){
                 if(wall[0] == 1 ){
-                    doc.moveTo((x1*unit) +x , y+ (y1*unit))
-                    doc.lineTo( (x1*unit) + (wall[1]*unit) + x , (y1*unit) +y)
+                    this.doc.moveTo((x1*unit) +x , y+ (y1*unit))
+                    this.doc.lineTo( (x1*unit) + (wall[1]*unit) + x , (y1*unit) +y)
                     x1+= wall[1]
                 }
                 else if(wall[0] == 0 ){
@@ -277,8 +210,8 @@ class Maze {
             y1 = 0
             for (let wall of vwalls){
                 if(wall[0] == 1 ){
-                    doc.moveTo((x1*unit) +x , (y1*unit)+y)
-                    doc.lineTo( x+ (x1*unit) , y + (y1*unit) + (wall[1]*unit))
+                    this.doc.moveTo((x1*unit) +x , (y1*unit)+y)
+                    this.doc.lineTo( x+ (x1*unit) , y + (y1*unit) + (wall[1]*unit))
                     y1+= wall[1]
                 }
                 else if(wall[0] == 0 ){
@@ -289,17 +222,17 @@ class Maze {
                     y1=0
                 }
             }
-            doc.moveTo(x+(unit*this.columns), y)
-            doc.lineTo((unit*this.columns)+ x , unit*(this.rows-1) + y)
-            doc.moveTo((unit*this.columns) + x , y+ (unit*(this.rows)))
-            doc.lineTo(x,unit*this.rows + y).lineCap('round').lineWidth(stroke).strokeColor(color).stroke()
-            doc.moveTo(x + unit/2,y + unit/2 )
+            this.doc.moveTo(x+(unit*this.columns), y)
+            this.doc.lineTo((unit*this.columns)+ x , unit*(this.rows-1) + y)
+            this.doc.moveTo((unit*this.columns) + x , y+ (unit*(this.rows)))
+            this.doc.lineTo(x,unit*this.rows + y).lineCap('round').lineWidth(strokeWidth).strokeColor(color).stroke()
+            this.doc.moveTo(x + unit/2,y + unit/2 )
             for (let cell of this.solvepath){
                     // if (this.getCell(c,r).info[0] == 3){
                     //     doc.rect(x + c*unit + unit*0.3  , y + r* unit + unit*0.3   ,  unit - unit*0.6  ,unit - unit * 0.6).fill('#ff0000')
                     // }
                     if (cell.info[0] == 3){
-                        doc.lineTo(cell.x*unit + x + unit/2 , cell.y*unit + y + unit/2)
+                        this.doc.lineTo(cell.x*unit + x + unit/2 , cell.y*unit + y + unit/2)
 
                     }
 
@@ -309,9 +242,63 @@ class Maze {
                     
                 }
             
-            doc.lineWidth(unit*0.63).strokeColor('#ff000').stroke()
+            this.doc.lineWidth(unit*0.63).strokeColor('#ff000').stroke()
+
         }
+        this.doc.end()
+
     }
+
+    // exportSVG(x, y ,size, lineColor, strokeWidth){
+    //     let fileExport = true
+    //     let payload = '<svg  version="1.1" xmlns="http://www.w3.org/2000/svg"  >'
+    //     let [hwalls , vwalls] = this.wallList()
+    //     let unit = (this.rows > this.columns ? size/this.rows : size/this.columns)
+    //     let x1 = 0
+    //     let y1 = 0
+
+    //     for (let wall of hwalls){
+    //         if(wall[0] == 1 ){
+    //             payload+= `<line x1="${x+(x1*unit)}" y1="${(y1*unit)+ y}" x2="${x+((x1* unit) +wall[1]*unit)}" y2="${(y1*unit)+y}" stroke-linecap="square" style="stroke:${lineColor};stroke-width:${strokeWidth}" />`
+    //             x1+= wall[1]
+    //         }
+    //         else if(wall[0] == 0 ){
+    //             x1 += wall[1]
+    //         }
+    //         else if (wall[0]=='newHLine'){
+    //             y1 += 1
+    //             x1=0
+    //         }
+    //     }
+    //     x1 = 0 
+    //     y1 = 0
+    //     for (let wall of vwalls){
+    //         if(wall[0] == 1 ){
+    //             payload+= `<line x1="${x+(x1*unit)}" y1="${y+ (y1*unit)}" x2="${x+(x1* unit)}" y2="${y+(y1*unit + wall[1]*unit)}" stroke-linecap="square" style="stroke:${lineColor};stroke-width:${strokeWidth}" />`
+    //             y1+= wall[1]
+    //         }
+    //         else if(wall[0] == 0 ){
+    //             y1 += wall[1]
+    //         }
+    //         else if (wall[0] == 'newVLine'){
+    //             x1 += 1
+    //             y1=0
+    //         }
+    //     }
+
+
+
+    //    payload += `<line x1="${x}" y1="${y+(unit*this.rows)}" x2="${x+(unit*this.columns)}" y2="${y+(unit*this.rows)}" stroke-linecap="square" style="stroke:${lineColor};stroke-width:${strokeWidth}" /><line x1="${x+(unit*this.columns)}" y1="${y}" x2="${x+(unit*this.columns)}" y2="${y+(unit*(this.rows-1))}" stroke-linecap="square" style="stroke:${lineColor};stroke-width:${strokeWidth}" /></svg>`
+    //     if (fileExport == true){
+    //         try {
+    //             fs.writeFileSync('maze.svg', payload)
+    //           } catch (err) {
+    //             console.error(err);
+    //           }
+    //     }else{
+    //     return payload
+    //     }
+    // }
     getAvailableCloseCells(cell){
         //console.log('neis of ')
         //console.log(cell)
