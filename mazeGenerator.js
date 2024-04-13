@@ -6,6 +6,7 @@ class PriorityQueue {
     constructor(){
         this.queue = []
     }
+    
     qpush(cell , prio){
         if(this.queue.length == 0 ){
             this.queue.push([cell , prio])
