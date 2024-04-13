@@ -9,14 +9,14 @@ This JavaScript project is a maze generator and exporter built using Node.js. It
 
 ### How to Use:
 1. **Clone the Repository**: Start by cloning this repository to your local machine using the following command:
-```console
-git clone https://github.com/yourusername/maze-generator.git
+```bash
+git clone https://github.com/DevEmperxr/TheMazeGenerator.git
 ```
 2. **Install Dependencies**: Navigate to the project directory and install the necessary dependencies using npm:
   ```javascript
   npm install
   ```
-3. **Import the Module**: Require the `maze-generator` module in your Node.js script.
+3. **Import the Module**: Require the `mazeGenerator` module in your Node.js script.
     ```javascript
     const Maze = require("./mazeGenerator")
     ```
